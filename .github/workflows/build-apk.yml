@@ -30,6 +30,21 @@ jobs:
       - name: Generar iconos y splash
         run: npx @capacitor/assets generate --android
 
+      - name: Preparar ROM (renombrar a game.nes)
+        run: |
+          mkdir -p www/rom
+          cd www/rom
+          f=$(find . -maxdepth 1 -iname '*.nes' ! -name 'game.nes' | head -n 1)
+          if [ -z "$f" ] && [ ! -f game.nes ]; then
+            z=$(find . -maxdepth 1 -iname '*.zip' | head -n 1)
+            if [ -n "$z" ]; then
+              unzip -o "$z" -d tmp_rom
+              f=$(find tmp_rom -iname '*.nes' | head -n 1)
+            fi
+          fi
+          if [ -n "$f" ]; then cp "$f" game.nes; fi
+          ls -la
+
       - name: Sincronizar web con Android
         run: npx cap sync android
 
