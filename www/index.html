@@ -67,11 +67,12 @@
   // ROM incluida en el APK (www/rom/game.nes): se carga sola si existe
   async function tryEmbeddedRom() {
     try {
-      const res = await fetch('rom/game.nes', { method: 'HEAD' });
-      if (res.ok) {
-        startGame('rom/game.nes', 'game');
-        return true;
-      }
+      const res = await fetch('rom/game.nes');
+      if (!res.ok) return false;
+      const blob = await res.blob();
+      if (blob.size < 1024) return false;
+      startGame(URL.createObjectURL(blob), 'game');
+      return true;
     } catch (e) { /* no hay ROM incluida */ }
     return false;
   }
