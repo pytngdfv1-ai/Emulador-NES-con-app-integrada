@@ -1,6 +1,6 @@
 {
   "appId": "com.ejemplo.nesplayer",
-  "appName": "NES Player",
+  "appName": "Lunar Ball",
   "webDir": "www",
   "android": {
     "allowMixedContent": false
