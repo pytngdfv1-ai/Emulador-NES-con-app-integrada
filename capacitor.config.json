@@ -1,0 +1,8 @@
+{
+  "appId": "com.ejemplo.nesplayer",
+  "appName": "NES Player",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

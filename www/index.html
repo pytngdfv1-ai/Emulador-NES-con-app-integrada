@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>NES Player</title>
+<style>
+  :root { --ink:#0f1115; --text:#e9e6df; --muted:#8a8f9c; --red:#e0463a; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--ink); color:var(--text); font-family:system-ui, sans-serif; }
+  body { display:flex; flex-direction:column; }
+  #intro { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; }
+  #intro h1 { font-size:22px; margin:0 0 6px; }
+  #intro p { color:var(--muted); font-size:14px; margin:0 0 24px; }
+  button { font:inherit; font-size:16px; background:var(--red); color:#fff; border:0; border-radius:8px; padding:14px 22px; cursor:pointer; }
+  #game { flex:1; display:none; }
+  #game.active { display:block; }
+  #error { color:var(--red); font-size:14px; min-height:20px; margin-top:16px; }
+  #hidden-input { display:none; }
+</style>
+</head>
+<body>
+
+<div id="intro">
+  <h1>NES Player</h1>
+  <p id="msg">Elige una ROM para empezar</p>
+  <button id="pickBtn" type="button">Elegir ROM</button>
+  <div id="error"></div>
+</div>
+
+<div id="game"></div>
+
+<input type="file" id="hidden-input" accept="*/*">
+
+<script>
+  const intro = document.getElementById('intro');
+  const gameDiv = document.getElementById('game');
+  const msg = document.getElementById('msg');
+  const errorEl = document.getElementById('error');
+  const input = document.getElementById('hidden-input');
+
+  function startGame(url, name) {
+    window.EJS_player = '#game';
+    window.EJS_core = 'nes';
+    window.EJS_gameUrl = url;
+    window.EJS_gameName = name;
+    window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+    window.EJS_startOnLoad = true;
+    window.EJS_color = '#e0463a';
+    intro.style.display = 'none';
+    gameDiv.classList.add('active');
+    const s = document.createElement('script');
+    s.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
+    document.body.appendChild(s);
+  }
+
+  function handleFile(file) {
+    errorEl.textContent = '';
+    if (!file) return;
+    if (!/\.(nes|zip)$/i.test(file.name)) {
+      errorEl.textContent = 'Usa un archivo .nes o .zip';
+      return;
+    }
+    startGame(URL.createObjectURL(file), file.name.replace(/\.(nes|zip)$/i, ''));
+  }
+
+  // ROM incluida en el APK (www/rom/game.nes): se carga sola si existe
+  async function tryEmbeddedRom() {
+    try {
+      const res = await fetch('rom/game.nes', { method: 'HEAD' });
+      if (res.ok) {
+        startGame('rom/game.nes', 'game');
+        return true;
+      }
+    } catch (e) { /* no hay ROM incluida */ }
+    return false;
+  }
+
+  document.getElementById('pickBtn').addEventListener('click', () => input.click());
+  input.addEventListener('change', e => handleFile(e.target.files[0]));
+
+  tryEmbeddedRom().then(loaded => {
+    if (!loaded) msg.textContent = 'Elige una ROM para empezar';
+  });
+</script>
+
+</body>
+</html>
