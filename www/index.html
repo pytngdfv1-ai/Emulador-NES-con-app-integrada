@@ -7,7 +7,7 @@
 <style>
   :root { --ink:#0f1115; --text:#e9e6df; --muted:#8a8f9c; --red:#e0463a; }
   * { box-sizing: border-box; }
-  html, body { margin:0; height:100%; background:var(--ink); color:var(--text); font-family:system-ui, sans-serif; }
+  html, body { margin:0; height:100%; background:var(--ink); color:var(--text); font-family:system-ui, sans-serif; overflow:hidden; }
   body { display:flex; flex-direction:column; }
   #intro { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; }
   #intro h1 { font-size:22px; margin:0 0 6px; }
@@ -17,6 +17,29 @@
   #game.active { display:block; }
   #error { color:var(--red); font-size:14px; min-height:20px; margin-top:16px; }
   #hidden-input { display:none; }
+
+  /* Aviso de girar pantalla: se muestra solo en vertical */
+  #rotate {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--ink);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+  }
+  #rotate svg { width: 64px; height: 64px; margin-bottom: 16px; animation: spin 1.6s ease-in-out infinite; }
+  #rotate p { font-size: 16px; color: var(--text); margin: 0; max-width: 280px; }
+  @keyframes spin {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+  }
+  @media (orientation: portrait) {
+    #rotate { display: flex; }
+  }
 </style>
 </head>
 <body>
@@ -29,6 +52,14 @@
 </div>
 
 <div id="game"></div>
+
+<div id="rotate">
+  <svg viewBox="0 0 24 24" fill="none" stroke="#e0463a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="5" y="2" width="14" height="20" rx="2"></rect>
+    <line x1="12" y1="18" x2="12.01" y2="18"></line>
+  </svg>
+  <p>Gira tu dispositivo. Esta app se juega en horizontal.</p>
+</div>
 
 <input type="file" id="hidden-input" accept="*/*">
 
@@ -45,13 +76,39 @@
     window.EJS_gameUrl = url;
     window.EJS_gameName = name;
     window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-    window.EJS_startOnLoad = true;
+    window.EJS_startOnLoaded = true;
     window.EJS_color = '#e0463a';
     intro.style.display = 'none';
     gameDiv.classList.add('active');
     const s = document.createElement('script');
     s.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
     document.body.appendChild(s);
+    autoDismissStartScreen();
+  }
+
+  // EmulatorJS muestra una pantalla de "Start Game" que normalmente requiere
+  // un toque del usuario (por las políticas de audio de los navegadores).
+  // Simulamos ese toque para saltarla automáticamente y entrar directo
+  // al menú del propio juego.
+  function autoDismissStartScreen() {
+    const tryClick = () => {
+      const target =
+        document.querySelector('.ejs_start_button') ||
+        document.querySelector('.ejs_startButton') ||
+        document.querySelector('[class*="start"]') ||
+        gameDiv;
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(type => {
+        target.dispatchEvent(new MouseEvent(type, {
+          bubbles: true, cancelable: true, clientX: x, clientY: y
+        }));
+      });
+    };
+    // Varios intentos porque la interfaz de EmulatorJS tarda en aparecer
+    [800, 1600, 2600, 4000].forEach(delay => setTimeout(tryClick, delay));
   }
 
   function handleFile(file) {
@@ -64,7 +121,7 @@
     startGame(URL.createObjectURL(file), file.name.replace(/\.(nes|zip)$/i, ''));
   }
 
-  // ROM incluida en el APK (www/rom/game.nes): se carga sola si existe
+  // ROM incluida en el APK (www/rom/game.nes): se carga sola al abrir
   async function tryEmbeddedRom() {
     try {
       const res = await fetch('rom/game.nes');
